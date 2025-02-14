@@ -2,8 +2,8 @@ name: "match-hosting-utilities"
 displayName: "Match Hosting utilities"
 description: "Aims hosting matches on the client a bit better! "
 author: "RushieWashie"
-subtitle: "v1.0, Helping you host matches :3"
-version: 1.0
+subtitle: "v1.1, Helping you host matches :3"
+version: 1.1
 
 minGameVersion: 140.4
 hidden: true

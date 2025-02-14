@@ -18,12 +18,15 @@ import static mindustry.Vars.state;
 
 public class MhuMain extends Mod {
     static public HashMap<String, Integer> cache = new HashMap<>();
-    static public int defaultTeam = Team.derelict.id;
+    static public int defaultTeam = -1; //derelict was not ideal since maps with derelict cores for capture lets observers build
     static public float timer = 0, slowTimer = 0, observerSpawns;
-    static boolean[] data = {false, false, false, false, false};
+    static boolean[] data = {false, false, false, false, false, false};
 
     public MhuMain() {
-        Events.on(EventType.ClientLoadEvent.class, you ->MhuSettings.buildCategory());
+        Events.on(EventType.ClientLoadEvent.class, you ->{
+            updateSettings();
+            MhuSettings.buildCategory();
+        });
 
         Events.on(EventType.PlayerJoin.class, ply  -> {
             if(data[1]) {
@@ -37,12 +40,18 @@ public class MhuMain extends Mod {
             updateCache();
         });
 
-
+        Events.on(EventType.WorldLoadEvent.class, you -> checkValidTeam());
         Events.on(EventType.PlayerLeave.class, ply -> updateCache());
 
         Events.run(EventType.Trigger.update, this::updateLoop);
 
         Log.info("Match Hosting Utils loaded!");
+    }
+
+    public void checkValidTeam(){
+        updateSettings();
+        if(defaultTeam >= 0) return;
+        MhuSettings.showTeamPicker();
     }
 
     public void updateCache(){
@@ -51,20 +60,20 @@ public class MhuMain extends Mod {
     }
 
     public void updateLoop(){
-
+        if(!Vars.net.server()) return;
         if(Time.globalTime >= slowTimer){
             slowTimer = Time.time + (Time.toSeconds * 10f);
             updateSettings();
         }
 
         if(Time.globalTime <= timer)return;
-        timer = Time.time + (Time.toSeconds * 1.5f);
+        timer = Time.time + (Time.toSeconds * 3f);
 
         updateObservers();
     }
 
     public static void updateSettings(){
-        defaultTeam = Core.settings.getInt("mhu-defaultTeam");
+        defaultTeam = Core.settings.getInt("mhu-defaultTeam", -1);
         observerSpawns = Core.settings.getInt("mhu-observerSpawns");
 
         data[0] = Core.settings.getBool("mhu-allowObservers");
@@ -72,14 +81,17 @@ public class MhuMain extends Mod {
         data[2] = Core.settings.getBool("mhu-assignObserver");
         data[3] = Core.settings.getBool("mhu-reassignTeams");
         data[4] = Core.settings.getBool("mhu-ignoreSelf");
+        data[5] = Core.settings.getBool("mhu-mono");
     }
 
     public void updateObservers(){
         if(!data[0])return;
 
         Seq<Player> players  = Groups.player.copy();
-        players.removeAll(p -> !p.unit().isNull());
+        //you can prob collapse this to one removeAll but rushie is not bright enough and is lazy to do it :p
         players.removeAll(p -> p.team().cores().size >= 1);
+        players.removeAll(p -> !p.isAdded()); //Don't try to update players who aren't even in game yet/loaded
+        players.removeAll(p -> !p.unit().isNull());
         if(data[4])players.remove(Vars.player);
 
         if(players.size == 0) return;
@@ -89,13 +101,13 @@ public class MhuMain extends Mod {
         cor.sort(c-> c.team.id);
 
         for(Player p : players){
-            Unit u = UnitTypes.evoke.create(p.team());
+            Unit u =  UnitTypes.evoke.create(p.team());
 
-            if(observerSpawns == 1){
+            Tmp.v1.set(0, 0);
+            if(observerSpawns == 1 && !cor.isEmpty()){
                 CoreBuild ran = cor.random();
                 Tmp.v1.set(ran.x, ran.y);
             } else if(observerSpawns == 2) Tmp.v1.set((state.map.width / 2f) * 8, (state.map.height / 2f) * 8);
-            else Tmp.v1.set(0, 0);
 
 
             u.set(Tmp.v1);
