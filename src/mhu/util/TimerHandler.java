@@ -51,7 +51,6 @@ public class TimerHandler{
     public static void loopTimer(){
         if(!matchActive)return;
 
-        //Todo: replace with something that doesnt just die
         if(Time.time <= secTimer)return;
         secTimer = Time.time + (Time.toSeconds);
         if(timerData[0]){
@@ -134,46 +133,44 @@ public class TimerHandler{
         BaseDialog dialog = new BaseDialog("@mhu-set-reminder");
         boolean[] shouldRebuild = {true};
         Runnable[] rebuild = {null};
-        dialog.cont.pane(p -> {
-            rebuild[0] = () -> {
-                p.clear();
-                for(int i = 0; i < reminders.size; i++){
-                    ReminderHelper remind = reminders.get(i);
-                    p.table(Tex.button, t -> {
+        dialog.cont.pane(p -> rebuild[0] = () -> {
+            p.clear();
+            for(int i = 0; i < reminders.size; i++){
+                ReminderHelper remind = reminders.get(i);
+                p.table(Tex.button, t -> {
 
-                        t.table( j -> {
-                            numberi("time:", z -> {
-                                remind.time = z;
-                                if(shouldRebuild[0]){
-                                    //prevents rebuilding to fast making it deselect the field which is annoying
-                                    shouldRebuild[0] = false;
-                                    Timer.schedule(() -> {
-                                        rebuild[0].run();
-                                        shouldRebuild[0] = true;
-                                    }, 1.5f);
-                                }
-                            }, () -> remind.time, j);
-                            Image img =new Image(Icon.cancel);
-                            img.clicked(() ->{
-                                reminders.remove(remind);
-                                rebuild[0].run();
-                            });
-                            j.add(img).touchable(Touchable.enabled).scaling(Scaling.bounded).padLeft(6f).padRight(6f);
-                            check("mhu-broadcast", z -> remind.broadcast = z, () -> remind.broadcast, j);
+                    t.table( j -> {
+                        numberi("time:", z -> {
+                            remind.time = z;
+                            if(shouldRebuild[0]){
+                                //prevents rebuilding to fast making it deselect the field which is annoying
+                                shouldRebuild[0] = false;
+                                Timer.schedule(() -> {
+                                    rebuild[0].run();
+                                    shouldRebuild[0] = true;
+                                }, 1.5f);
+                            }
+                        }, () -> remind.time, j);
+                        Image img =new Image(Icon.cancel);
+                        img.clicked(() ->{
+                            reminders.remove(remind);
+                            rebuild[0].run();
                         });
+                        j.add(img).touchable(Touchable.enabled).scaling(Scaling.bounded).padLeft(6f).padRight(6f);
+                        check("mhu-broadcast", z -> remind.broadcast = z, () -> remind.broadcast, j);
+                    });
 
-                        t.row();
-                        t.table( j -> {
-                            j.labelWrap("msg: ").left().width(50f);
-                            j.field(remind.msg, z -> remind.msg = z)
-                                .valid(k -> !(k.contains(split) || k.contains(subSplit)))
-                                .color(Color.lightGray).growX().right();
-                        }).growX();
-                    }).pad(8f).row();
+                    t.row();
+                    t.table( j -> {
+                        j.labelWrap("msg: ").left().width(50f);
+                        j.field(remind.msg, z -> remind.msg = z)
+                            .valid(k -> !(k.contains(split) || k.contains(subSplit)))
+                            .color(Color.lightGray).growX().right();
+                    }).growX();
+                }).pad(8f).row();
 
-                }
-            };
-        });
+            }
+        }).scrollX(false);
         rebuild[0].run();
 
         dialog.addCloseListener();

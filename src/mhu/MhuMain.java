@@ -4,6 +4,7 @@ import arc.*;
 import arc.util.*;
 import mhu.ui.*;
 import mhu.util.*;
+import mindustry.*;
 import mindustry.core.GameState.*;
 import mindustry.game.*;
 import mindustry.game.EventType.*;
@@ -19,35 +20,72 @@ public class MhuMain extends Mod {
 
         Events.on(WorldLoadBeginEvent.class, e -> clear());
 
-        Events.on(GameOverEvent.class , e ->clearShow());
-
         Events.on(BlockBuildEndEvent.class, e -> {
+            if(!gatherStats) return;
             if(e.breaking){
                 trackedData[e.tile.team().id][4]++;
             }else{
                 trackedData[e.tile.team().id][2]++;
             }
             for(ItemStack stack : e.tile.block().requirements){
-                if(trackedSpent[e.tile.team().id][stack.item.id] == null){
-                    trackedSpent[e.tile.team().id][stack.item.id] = new ItemStack();
-                    trackedSpent[e.tile.team().id][stack.item.id].set(stack.item, stack.amount);
+                if(trackedSpent[e.tile.team().id][stack.item.id][0] == null){
+                    trackedSpent[e.tile.team().id][stack.item.id][0] = new ItemStack();
+                    trackedSpent[e.tile.team().id][stack.item.id][0].set(stack.item, stack.amount);
                 }
-                else trackedSpent[e.tile.team().id][stack.item.id].amount += stack.amount;
+                else trackedSpent[e.tile.team().id][stack.item.id][0].amount += stack.amount;
+            }
+
+
+        });
+
+        Events.on(BlockDestroyEvent.class, e ->{
+            if(!gatherStats) return;
+            trackedData[e.tile.team().id][3]++;
+            for(ItemStack stack : e.tile.block().requirements){
+                if(trackedSpent[e.tile.team().id][stack.item.id][1] == null){
+                    trackedSpent[e.tile.team().id][stack.item.id][1] = new ItemStack();
+                    trackedSpent[e.tile.team().id][stack.item.id][1].set(stack.item, stack.amount);
+                }
+                else trackedSpent[e.tile.team().id][stack.item.id][1].amount += stack.amount;
             }
 
         });
 
-        Events.on(BlockDestroyEvent.class, e -> trackedData[e.tile.team().id][3]++);
+        Events.on(UnitDestroyEvent.class, e ->{
+            if(!gatherStats) return;
+            trackedData[e.unit.team().id][1]++;
+            for(ItemStack stack : e.unit.type.getTotalRequirements()){
+                if(trackedSpent[e.unit.team().id][stack.item.id][2] == null){
+                    trackedSpent[e.unit.team().id][stack.item.id][2] = new ItemStack();
+                    trackedSpent[e.unit.team().id][stack.item.id][2].set(stack.item, stack.amount);
+                }
+                else trackedSpent[e.unit.team().id][stack.item.id][2].amount += stack.amount;
+            }
+            unitLost[e.unit.team.id][e.unit.type.id]++;
+        });
 
-        Events.on(UnitDestroyEvent.class, e -> trackedData[e.unit.team().id][1]++);
+        Events.on(UnitCreateEvent.class, e -> {
+            if(!gatherStats) return;
+            trackedData[e.unit.team().id][0]++;
 
-        Events.on(UnitCreateEvent.class, e -> trackedData[e.unit.team().id][0]++);
+            for(ItemStack stack : e.unit.type.getTotalRequirements()){
+                if(trackedSpent[e.unit.team().id][stack.item.id][3] == null){
+
+                    trackedSpent[e.unit.team().id][stack.item.id][3] = new ItemStack();
+                    trackedSpent[e.unit.team().id][stack.item.id][3].set(stack.item, stack.amount);
+                }
+                else trackedSpent[e.unit.team().id][stack.item.id][3].amount += stack.amount;
+            }
+            unitTotal[e.unit.team.id][e.unit.type.id]++;
+        });
+
 
         Events.on(EventType.ClientLoadEvent.class, you ->{
             clear();
             updateSettingsGlobal();
             MhuSettings.buildCategory();
             TimerHandler.loadReminders();
+            mhuKeyBinds.setDefaults(MhuBinding.values());
         });
 
         Events.on(EventType.PlayerJoin.class, ply  -> {
@@ -66,10 +104,27 @@ public class MhuMain extends Mod {
         Events.on(EventType.PlayerLeave.class, ply -> observerHandler.updateCache());
 
         Events.on(EventType.HostEvent.class, ply -> {
-            state.set(State.paused);
+            if(timerData[2]) state.set(State.paused);
         });
 
         Events.run(EventType.Trigger.update, MhuVars::updateLoop);
+
+        Events.on(EventType.StateChangeEvent.class, ply -> {
+            if(!menuStats)return;
+            if(!statsShowing){
+                statsShowing = true;
+                Timer.schedule(() ->{
+                    statsShowing = false;
+                    if(Vars.state.isMenu()) stats.show();
+                },1.5f);
+            }
+        });
+
+
+        Events.on(EventType.GameOverEvent.class, ply -> {
+            statsShowing = true;
+            Timer.schedule(() -> stats.show(),3f);
+        });
 
         TimerHandler.handleCommands();
 

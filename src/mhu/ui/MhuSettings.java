@@ -20,7 +20,6 @@ import static mindustry.Vars.ui;
 
 public class MhuSettings{
 
-
     //Foo's complaint categories
     public static class MhuSettingTable extends SettingsMenuDialog.SettingsTable.Setting{
         int type = -1;
@@ -44,10 +43,10 @@ public class MhuSettings{
                     String name = "mhu-statsKey";
                     t.add(bundle.get("keybind." + name + ".name", Strings.capitalize(name)), Color.white).left().padRight(40).padLeft(8);
                     //t.label(() -> cuiKeyBinds.get(section, keybind).key.toString()).color(Pal.accent).left().minWidth(90).padRight(20);
-                    t.label(() -> "meow").color(Pal.accent).left().minWidth(90).padRight(20);
+                    t.label(() -> MhuVars.mhuKeyBinds.get(MhuBinding.show_stats).key.name()).color(Pal.accent).left().minWidth(90).padRight(20);
 
                     t.button("@settings.rebind",  Styles.defaultt, () -> {
-                        Log.err("meow");
+                        MhuVars.inputHandler.openDialog(MhuBinding.show_stats);
                     }).width(130f);
 
                     }).pad(3f).margin(4f).padTop(5f).growX().row();
@@ -187,4 +186,6 @@ public class MhuSettings{
         MhuVars.defaultTeam = Mathf.random(1, Team.all.length);
         Call.sendChatMessage(Core.bundle.format("mhu-team-observers-no-team", MhuVars.defaultTeam, Team.get(MhuVars.defaultTeam).color.toString()));
     }
+
+
 }
