@@ -51,6 +51,7 @@ public class ObserverHandler{
         data[3] = Core.settings.getBool("mhu-reassignTeams");
         data[4] = Core.settings.getBool("mhu-ignoreSelf");
         data[5] = Core.settings.getBool("mhu-mono");
+        timeAltColours = Core.settings.getBool("mhu-formatColorsAlt");
     }
 
     public void updateObservers(){

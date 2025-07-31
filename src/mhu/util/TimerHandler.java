@@ -11,6 +11,7 @@ import arc.scene.ui.layout.*;
 import arc.util.*;
 import mhu.*;
 import mindustry.gen.*;
+import mindustry.graphics.*;
 import mindustry.ui.dialogs.*;
 
 import static mhu.MhuVars.*;
@@ -71,7 +72,6 @@ public class TimerHandler{
     public static void updateCache(){
         remindersCache.clear();
         remindersCache = reminders.copy();
-        Log.err((matchClock - 10) + " " +  (matchClock + 10));
         for(ReminderHelper remind : remindersCache){
             if(!(remind.time >= matchClock - 10 && remind.time <= matchClock + 10)) remindersCache.remove(remind);
         }
@@ -98,6 +98,10 @@ public class TimerHandler{
     };
 
     public static String formatTime(int time){
+        return timeAltColours ? formatTimeAlt(time) : formatTimeLeg(time);
+    }
+
+    public static String formatTimeLeg(int time){
         int t = time;
         StringBuilder out = new StringBuilder();
         if(t <= 0) return "[darkgrey]" + t;
@@ -123,6 +127,38 @@ public class TimerHandler{
 
     };
 
+
+    public static String formatTimeAlt(int time){
+        int t = time;
+        StringBuilder out = new StringBuilder();
+        if(t <= 0) return "[darkgrey]" + t;
+
+
+        if(t >= 3600){
+            int h = Math.round(t/3600f);
+            out.append("[white]").append(h).append("h[] ");
+            t -= 3600 * h;
+        }
+        if(t >= 60){
+            int m = Math.round(t/60f);
+
+            out.append(m <20 ? "[green]" : "[#" + Pal.heal.toString()+"]").append(m).append("m[] ");
+            t -= 60 * m;
+        }
+
+        if(t > 0){
+            if(t < 0) t = Math.abs(60 + t);
+            if(t < 10)out.append("[scarlet]").append(t).append("s[]");
+            else if(t > 30)out.append("[pink]").append(t).append("s[]");
+            else if(t > 0)out.append("[red]").append(t).append("s[]");
+        }
+
+
+
+        return out.toString();
+
+    };
+
     public static void  updateSettings(){
         timerData[1] = Core.settings.getBool("mhu-endGamePaused");
         timerData[2] = Core.settings.getBool("mhu-startGamePaused");
@@ -131,7 +167,6 @@ public class TimerHandler{
 
     public static void reminderDialog(){
         BaseDialog dialog = new BaseDialog("@mhu-set-reminder");
-        boolean[] shouldRebuild = {true};
         Runnable[] rebuild = {null};
         dialog.cont.pane(p -> rebuild[0] = () -> {
             p.clear();
@@ -139,24 +174,17 @@ public class TimerHandler{
                 ReminderHelper remind = reminders.get(i);
                 p.table(Tex.button, t -> {
 
-                    t.table( j -> {
+                    t.table( Tex.buttonDisabled, j -> {
                         numberi("time:", z -> {
                             remind.time = z;
-                            if(shouldRebuild[0]){
-                                //prevents rebuilding to fast making it deselect the field which is annoying
-                                shouldRebuild[0] = false;
-                                Timer.schedule(() -> {
-                                    rebuild[0].run();
-                                    shouldRebuild[0] = true;
-                                }, 1.5f);
-                            }
                         }, () -> remind.time, j);
                         Image img =new Image(Icon.cancel);
                         img.clicked(() ->{
                             reminders.remove(remind);
                             rebuild[0].run();
                         });
-                        j.add(img).touchable(Touchable.enabled).scaling(Scaling.bounded).padLeft(6f).padRight(6f);
+                        j.add(img).touchable(Touchable.enabled).scaling(Scaling.bounded).pad(10f);
+                        j.label(() ->  formatTime(remind.time)).growX();
                         check("mhu-broadcast", z -> remind.broadcast = z, () -> remind.broadcast, j);
                     });
 
@@ -251,12 +279,13 @@ public class TimerHandler{
             t.left();
             t.add(text).left().padRight(5);
             t.field((prov.get()) + "", s -> cons.get(Strings.parseInt(s)))
-            .valid(f -> Strings.parseInt(f) >= 0).width(130f).left();
-        }).padTop(0).tooltip(formatTime(prov.get()));
+            .valid(f -> Strings.parseInt(f) >= 0).width(130f).left()
+            .color(Color.white).growX().right();
+        }).padTop(0);
     }
 
     static void check(String text, Boolc cons, Boolp prov, Table main){
-        main.check(Core.bundle.get(text), cons).checked(prov.get()).padLeft(100f).tooltip(Core.bundle.getOrNull(text + ".description")).get().right();
+        main.check(Core.bundle.get(text), cons).checked(prov.get()).padLeft(10f).tooltip(Core.bundle.getOrNull(text + ".description")).get().right();
     }
 
 }

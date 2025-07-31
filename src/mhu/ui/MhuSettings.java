@@ -19,7 +19,7 @@ import static arc.Core.*;
 import static mindustry.Vars.ui;
 
 public class MhuSettings{
-
+    public static Runnable[] rebuildKeys = {null};
     //Foo's complaint categories
     public static class MhuSettingTable extends SettingsMenuDialog.SettingsTable.Setting{
         int type = -1;
@@ -39,40 +39,36 @@ public class MhuSettings{
                     t.image().color(Pal.accent).height(3f).padTop(5).padBottom(5).growX().row();
                 }).padTop(5f).growX().row();
                 case 3 -> table.table(t -> t.button(Core.bundle.get("stats"), Icon.list, Styles.defaultt, () -> MhuVars.stats.show()).growX()).growX().padLeft(10f).padRight(10f).padTop(2f).padBottom(2f).row();
-                case 2 -> table.table(Tex.buttonDisabled, t ->{
-                    String name = "mhu-statsKey";
-                    t.add(bundle.get("keybind." + name + ".name", Strings.capitalize(name)), Color.white).left().padRight(40).padLeft(8);
-                    //t.label(() -> cuiKeyBinds.get(section, keybind).key.toString()).color(Pal.accent).left().minWidth(90).padRight(20);
-                    t.label(() -> MhuVars.mhuKeyBinds.get(MhuBinding.show_stats).key.name()).color(Pal.accent).left().minWidth(90).padRight(20);
+                case 2 ->
+                    table.table(Tex.buttonDisabled, t ->{
+                        rebuildKeys[0] = () -> {
+                            t.clear();
+                            String name = "mhu-statsKey";
+                            t.add(bundle.get("keybind." + name + ".name", Strings.capitalize(name)), Color.white).left().padRight(40).padLeft(8);
+                            //t.label(() -> cuiKeyBinds.get(section, keybind).key.toString()).color(Pal.accent).left().minWidth(90).padRight(20);
+                            t.label(() -> MhuVars.mhuKeyBinds.get(MhuBinding.show_stats).key.name()).color(Pal.accent).left().minWidth(90).padRight(20);
 
-                    t.button("@settings.rebind",  Styles.defaultt, () -> {
-                        MhuVars.inputHandler.openDialog(MhuBinding.show_stats);
-                    }).width(130f);
-
+                            t.button("@settings.rebind",  Styles.defaultt, () -> {
+                                MhuVars.inputHandler.openDialog(MhuBinding.show_stats);
+                            }).width(130f);
+                        };
+                        rebuildKeys[0].run();
                     }).pad(3f).margin(4f).padTop(5f).growX().row();
                 case 1 ->{
-                    boolean[] shouldRebuild = {true};
-                    Runnable[] rebuild = {null};
-                    table.table(t-> rebuild[0] = () -> {
+                    table.table(t->{
                         t.clear();
                         t.left();
-                        t.add(title).left().padRight(5);
-                        t.field(Core.settings.getInt("mhu-match-clock") + "", s ->{
-                            MhuVars.matchClock = Strings.parseInt(s);
-                            settings.put("mhu-match-clock", MhuVars.matchClock);
+                        t.table( ta ->{
+                            ta.add(title).left().padRight(5);
+                            ta.field(Core.settings.getInt("mhu-match-clock") + "", s ->{
+                                MhuVars.matchClock = Strings.parseInt(s);
+                                settings.put("mhu-match-clock", MhuVars.matchClock);
+                                MhuVars.updateSettingsGlobal();
+                            }).valid(f -> Strings.parseInt(f) >= 0).color(Color.white).minWidth(200).padLeft(5f);
+                            ta.label(() ->TimerHandler.formatTime(settings.getInt("mhu-match-clock")));
+                        }).growX().left();
+                    }).growX().pad(5f).row();
 
-                            if(shouldRebuild[0]){
-                                //prevents rebuilding to fast making it deselect the field which is annoying
-                                shouldRebuild[0] = false;
-                                Timer.schedule(() ->{
-                                    rebuild[0].run();
-                                    shouldRebuild[0] = true;
-                                },1.5f);
-                            }
-                        }).valid(f -> Strings.parseInt(f) >= 0).tooltip("("+ bundle.get("unit.seconds") + ")\n" + TimerHandler.formatTime()).width(200f).left();
-
-                    }).pad(5f).row();
-                    rebuild[0].run();
                 }
                 case 0 -> table.table(t -> t.button(Core.bundle.get("setting.mhu-reminderConfig.name"), Icon.settings, Styles.defaultt, TimerHandler::reminderDialog).growX()).growX().padLeft(10f).padRight(10f).padTop(2f).padBottom(2f).row();
                 default -> table.table(t -> t.button(Core.bundle.get("setting.mhu-teamObservers.name"), Icon.list, Styles.defaultt, MhuSettings::showTeamPicker).growX()).growX().padLeft(10f).padRight(10f).padTop(2f).padBottom(2f).row();
@@ -86,8 +82,8 @@ public class MhuSettings{
 
             table.pref(new MhuSettingTable("mhu-observers", -2));
             table.pref(new MhuSettingTable("mhu-teamObservers"));
-            table.checkPref("mhu-allowObservers", true);
             table.checkPref("mhu-alterPlayers", true);
+            table.checkPref("mhu-allowObservers", true);
             table.checkPref("mhu-assignObserver", true);
             table.checkPref("mhu-reassignTeams", true);
             table.checkPref("mhu-ignoreSelf", true);
@@ -102,6 +98,7 @@ public class MhuSettings{
             table.pref(new MhuSettingTable("mhu-timer", -2));
             table.pref(new MhuSettingTable("mhu-matchDuration", 1));
             table.pref(new MhuSettingTable("mhu-reminderConfig", 0));
+            table.checkPref("mhu-formatColorsAlt", true);
             table.checkPref("mhu-endGamePaused", true);
             table.checkPref("mhu-startGamePaused", true);
             table.checkPref("mhu-matchStartUnpause", true);

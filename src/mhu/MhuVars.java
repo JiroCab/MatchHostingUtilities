@@ -29,7 +29,7 @@ public class MhuVars{
         matchClock = -1;
     public static float timer = 0, slowTimer = 0, secTimer, observerSpawns, statsFntScl, statsHeight;
     public static boolean[] data = {false, false, false, false, false, false}, timerData = {false, false, false, false};
-    public static boolean matchActive = false, statsShowing = false, menuStats = false, gatherStats = false, statsShowHidden = false;
+    public static boolean matchActive = false, statsShowing = false, menuStats = false, gatherStats = false, statsShowHidden = false, timeAltColours = true;
 
     //Unit made, units lost, building built, building lost, building decon
     public static int[][] trackedData;
@@ -40,7 +40,8 @@ public class MhuVars{
     //this is madness
 
     public static arc.KeyBinds mhuKeyBinds = new KeyBinds();
-    private KeyBinds.KeyBind[] definitions;
+    public static KeyBinds.KeyBind[] definitions;
+
 
     public static void clearShow(){
         stats.show();
@@ -63,6 +64,7 @@ public class MhuVars{
     public static void updateLoop(){
         TimerHandler.loopTimer();
         observerHandler.updateLoop();
+        inputHandler.update();
     }
 
     public static void startMatch(){
@@ -93,25 +95,28 @@ public class MhuVars{
         for(int t = 1; t < 100; t++){
             trackedData[t][0] = Team.all.length - t;
             for(int i = 1; i < 6; i++){
-                trackedData[t][i] = Mathf.random(0, 5000);
+                if(Mathf.randomBoolean(0.5f)) continue;
+                trackedData[t][i] = Mathf.random(0, 1000);
             }
             for(int i = 0; i < Vars.content.items().size; i++){
                 if(Mathf.randomBoolean(0.8f)){
                     trackedSpent[t][i][0] = new ItemStack();
-                    trackedSpent[t][i][0].set(Vars.content.item(i), Mathf.random(0, 5000));
+                    trackedSpent[t][i][0].set(Vars.content.item(i), Mathf.random(0, 2000));
                 }
                 trackedSpent[t][i][3] = new ItemStack();
-                trackedSpent[t][i][3].set(Vars.content.item(i), Mathf.random(0, 5000));
+                trackedSpent[t][i][3].set(Vars.content.item(i), Mathf.random(0, 1000));
             }
             for(int i = 0; i < 15; i++){
+                if(Mathf.randomBoolean(0.5f)) continue;
                 trackedSpent[t][i][1] = new ItemStack();
-                trackedSpent[t][i][1].set(Vars.content.item(i), Mathf.random(0, 5000));
+                trackedSpent[t][i][1].set(Vars.content.item(i), Mathf.random(0, 1000));
                 trackedSpent[t][i][2] = new ItemStack();
-                trackedSpent[t][i][2].set(Vars.content.item(i), Mathf.random(0, 5000));
+                trackedSpent[t][i][2].set(Vars.content.item(i), Mathf.random(0, 1000));
             }
             for(int i = 0; i < Vars.content.units().size; i++){
+                if(Mathf.randomBoolean(0.5f)) continue;
                 unitLost[t][i] = Mathf.random(0 ,6000);
-                unitTotal[t][i] = Mathf.random(0 ,1009587369);
+                unitTotal[t][i] = Mathf.random(0 ,6000);
             }
 
         }

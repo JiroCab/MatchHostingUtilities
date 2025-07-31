@@ -17,7 +17,6 @@ import static mindustry.Vars.state;
 public class MhuMain extends Mod {
 
     public MhuMain() {
-
         Events.on(WorldLoadBeginEvent.class, e -> clear());
 
         Events.on(BlockBuildEndEvent.class, e -> {
@@ -86,6 +85,8 @@ public class MhuMain extends Mod {
             MhuSettings.buildCategory();
             TimerHandler.loadReminders();
             mhuKeyBinds.setDefaults(MhuBinding.values());
+            definitions = mhuKeyBinds.getKeybinds();
+            inputHandler.load();
         });
 
         Events.on(EventType.PlayerJoin.class, ply  -> {
@@ -100,16 +101,21 @@ public class MhuMain extends Mod {
             observerHandler.updateCache();
         });
 
-        Events.on(EventType.WorldLoadEvent.class, you -> observerHandler.checkValidTeam());
+        Events.on(EventType.WorldLoadEvent.class, you ->{
+            observerHandler.checkValidTeam();
+            updateSettingsGlobal();
+        });
         Events.on(EventType.PlayerLeave.class, ply -> observerHandler.updateCache());
 
         Events.on(EventType.HostEvent.class, ply -> {
             if(timerData[2]) state.set(State.paused);
+            MhuVars.generateBogusData();
         });
 
         Events.run(EventType.Trigger.update, MhuVars::updateLoop);
 
         Events.on(EventType.StateChangeEvent.class, ply -> {
+            if(state.isMenu()) matchClock = Core.settings.getInt("mhu-match-clock");
             if(!menuStats)return;
             if(!statsShowing){
                 statsShowing = true;
